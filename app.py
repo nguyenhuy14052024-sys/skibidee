@@ -5,11 +5,16 @@ from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
+# Tên file Database
+DB_NAME = 'daily_logs.db'
+
 def init_db():
     # Sửa lỗi: Tạo kết nối SQLite ngay trong hàm
-    conn = sqlite3.connect('daily_logs.db')
+    conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute('''
+    
+    # Tạo bảng với ID tự tăng để quản lý chính xác
+    cursor.execute(f'''
         CREATE TABLE IF NOT EXISTS switch_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             state TEXT NOT NULL,
@@ -21,28 +26,28 @@ def init_db():
 
 @app.route('/')
 def home():
+    # Khi load trang, bạn có thể gửi dữ liệu lịch sử về (bước nâng cấp sau)
     return render_template('index.html')
 
 @app.route('/api/log', methods=['POST'])
 def save_log():
     data = request.get_json()
     state = data.get('state')
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    current_time = datetime.now().strftime("%H:%M:%S") # Chỉ lấy giờ phút giây cho đẹp
     
-    conn = sqlite3.connect('daily_logs.db')
+    conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("INSERT INTO switch_history (state, timestamp) VALUES (?, ?)", (state, current_time))
     conn.commit()
     conn.close()
     
+    # Trả về status và thời gian đã lưu để frontend cập nhật
     return jsonify({"status": "success", "time": current_time})
 
 if __name__ == '__main__':
-    # Chạy hàm khởi tạo database trước khi mở server
+    # Khởi tạo database trước khi mở server
     init_db()
     
-    # Sửa lỗi Port trên Render: Lấy cổng do Render cấp, nếu không có thì dùng 5000
+    # Cấu hình Port trên Render
     port = int(os.environ.get("PORT", 5000))
-    
-    # Bắt buộc phải có host='0.0.0.0' để Render kết nối được
     app.run(host='0.0.0.0', port=port)
