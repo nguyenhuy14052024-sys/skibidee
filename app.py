@@ -44,6 +44,13 @@ def save_log():
     # Trả về status và thời gian đã lưu để frontend cập nhật
     return jsonify({"status": "success", "time": current_time})
 
+from flask import send_from_directory
+
+@app.route('/favicon.svg')
+def favicon():
+    # Hàm này giúp trả về file logo khi trình duyệt yêu cầu
+    return send_from_directory(os.path.join(app.root_path),
+                               'favicon.svg', mimetype='image/svg+xml')
 if __name__ == '__main__':
     # Khởi tạo database trước khi mở server
     init_db()
